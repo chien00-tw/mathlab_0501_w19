@@ -1,0 +1,1594 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>期末偵探任務：怪盜全球大追緝 - 數感實驗室</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- QRCode.js for dynamic QR rendering -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  
+  <!-- html2canvas for exporting high-res images -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap');
+    
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Custom scrollbar for iPad and touch devices */
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #94a3b8;
+      border-radius: 8px;
+    }
+
+    /* Large touch-friendly select styling */
+    .custom-select {
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23334155' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+      background-position: right 1rem center;
+      background-repeat: no-repeat;
+      background-size: 1.5em 1.5em;
+      padding-right: 3rem;
+      appearance: none;
+    }
+
+    /* Tooltip styling */
+    .has-tooltip {
+      position: relative;
+    }
+    .tooltip-box {
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.2s, transform 0.2s;
+      position: absolute;
+      bottom: -46px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-6px);
+      white-space: nowrap;
+      z-index: 60;
+      pointer-events: none;
+    }
+    .has-tooltip:hover .tooltip-box,
+    .has-tooltip:focus-within .tooltip-box {
+      visibility: visible;
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col justify-between select-none">
+
+  <!-- Top Fixed Navigation Bar -->
+  <header class="sticky top-0 z-40 bg-slate-900 border-b-4 border-amber-500 shadow-xl px-4 py-3 sm:px-6">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- Brand & Version -->
+      <div class="flex items-center space-x-3">
+        <div class="w-12 h-12 bg-amber-500 rounded-2xl flex items-center justify-center text-slate-950 font-black text-2xl shadow-md transform -rotate-3">
+          <i class="fa-solid fa-compass"></i>
+        </div>
+        <div class="flex items-baseline space-x-2">
+          <h1 class="text-xl sm:text-2xl font-black text-white tracking-wide">
+            期末偵探任務：怪盜全球大追緝
+          </h1>
+          <span class="bg-amber-400/20 text-amber-300 text-sm font-black px-2.5 py-0.5 rounded-full border border-amber-400/40">
+            v1.3.0
+          </span>
+        </div>
+      </div>
+
+      <!-- Main Tab Switcher (Fixed Position, non-scrolling) -->
+      <nav class="flex items-center bg-slate-800 p-1.5 rounded-2xl border border-slate-700 shadow-inner">
+        <button id="tab-btn-mission" onclick="switchTab('mission')" 
+          class="tab-btn px-4 py-2.5 rounded-xl font-bold text-base sm:text-lg transition-all duration-150 flex items-center gap-2 bg-amber-500 text-slate-950 shadow-md">
+          <i class="fa-solid fa-map-location-dot"></i>
+          <span>① 經緯度追緝</span>
+        </button>
+        <button id="tab-btn-geometry" onclick="switchTab('geometry')" 
+          class="tab-btn px-4 py-2.5 rounded-xl font-bold text-base sm:text-lg transition-all duration-150 flex items-center gap-2 text-slate-300 hover:text-white">
+          <i class="fa-solid fa-shapes"></i>
+          <span>② 建築幾何密碼</span>
+        </button>
+        <button id="tab-btn-orid" onclick="switchTab('orid')" 
+          class="tab-btn px-4 py-2.5 rounded-xl font-bold text-base sm:text-lg transition-all duration-150 flex items-center gap-2 text-slate-300 hover:text-white">
+          <i class="fa-solid fa-award"></i>
+          <span>③ ORID 成果反思</span>
+        </button>
+      </nav>
+
+      <!-- Pure Icon Header Actions (Strict order: QR -> Maximize -> Guide) -->
+      <div class="flex items-center space-x-2">
+        <!-- ① QR Code Action -->
+        <div class="has-tooltip">
+          <button onclick="openQrModal()" 
+            class="w-13 h-13 p-3 bg-slate-800 hover:bg-slate-700 active:bg-amber-500 active:text-slate-900 text-amber-400 rounded-2xl border border-slate-700 text-xl flex items-center justify-center transition shadow focus:outline-none">
+            <i class="fa-solid fa-qrcode"></i>
+          </button>
+          <div class="tooltip-box bg-slate-800 text-amber-300 border border-slate-600 text-xs px-3 py-1.5 rounded-xl shadow-2xl font-bold">
+            QR Code 掃碼分享
+          </div>
+        </div>
+
+        <!-- ② Fullscreen Toggle Action -->
+        <div class="has-tooltip">
+          <button onclick="toggleFullScreen()" 
+            class="w-13 h-13 p-3 bg-slate-800 hover:bg-slate-700 active:bg-amber-500 active:text-slate-900 text-sky-400 rounded-2xl border border-slate-700 text-xl flex items-center justify-center transition shadow focus:outline-none">
+            <i id="fullscreen-icon" class="fa-solid fa-expand"></i>
+          </button>
+          <div class="tooltip-box bg-slate-800 text-sky-300 border border-slate-600 text-xs px-3 py-1.5 rounded-xl shadow-2xl font-bold">
+            全螢幕切換
+          </div>
+        </div>
+
+        <!-- ③ Course Guide Action -->
+        <div class="has-tooltip">
+          <button onclick="openGuideModal()" 
+            class="w-13 h-13 p-3 bg-slate-800 hover:bg-slate-700 active:bg-amber-500 active:text-slate-900 text-emerald-400 rounded-2xl border border-slate-700 text-xl flex items-center justify-center transition shadow focus:outline-none">
+            <i class="fa-solid fa-book-open"></i>
+          </button>
+          <div class="tooltip-box bg-slate-800 text-emerald-300 border border-slate-600 text-xs px-3 py-1.5 rounded-xl shadow-2xl font-bold">
+            課程設計說明
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Top Student Info Banner -->
+  <section class="bg-amber-50 border-b border-amber-200 px-4 py-3 shadow-sm">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+      
+      <div class="flex items-center space-x-2 text-amber-950 font-black text-lg">
+        <i class="fa-solid fa-id-badge text-amber-600 text-2xl"></i>
+        <span>偵探社成員登記：</span>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3">
+        <!-- Class Selector (5年1班 ~ 5年14班, Default: 5年1班) -->
+        <div class="flex items-center bg-white px-3 py-1.5 rounded-2xl border-2 border-amber-300 shadow-sm">
+          <span class="text-sm font-bold text-slate-500 mr-2">班級</span>
+          <select id="student-class" onchange="updateProfile()" class="custom-select font-black text-lg text-slate-800 bg-transparent focus:outline-none cursor-pointer">
+            <!-- Populated dynamically via JS from 5年1班 to 5年14班 -->
+          </select>
+        </div>
+
+        <!-- Seat Number Selector (1 ~ 28, Default: 28) -->
+        <div class="flex items-center bg-white px-3 py-1.5 rounded-2xl border-2 border-amber-300 shadow-sm">
+          <span class="text-sm font-bold text-slate-500 mr-2">座號</span>
+          <select id="student-seat" onchange="updateProfile()" class="custom-select font-black text-lg text-slate-800 bg-transparent focus:outline-none cursor-pointer">
+            <!-- Populated dynamically via JS from 1 to 28 -->
+          </select>
+        </div>
+
+        <!-- Student Name (Default: 野比大雄) -->
+        <div class="flex items-center bg-white px-3 py-1.5 rounded-2xl border-2 border-amber-300 shadow-sm">
+          <span class="text-sm font-bold text-slate-500 mr-2">姓名</span>
+          <input type="text" id="student-name" value="野比大雄" oninput="updateProfile()" 
+            class="font-black text-lg text-slate-800 w-28 bg-transparent focus:outline-none border-b-2 border-amber-400 focus:border-amber-600">
+        </div>
+
+        <!-- Team Role Selection (導航員、記錄員、計算員) -->
+        <div class="flex items-center bg-white px-3 py-1.5 rounded-2xl border-2 border-amber-300 shadow-sm">
+          <span class="text-sm font-bold text-slate-500 mr-2">今日任務角色</span>
+          <select id="student-role" onchange="updateProfile()" class="custom-select font-black text-lg text-amber-700 bg-transparent focus:outline-none cursor-pointer">
+            <option value="導航員 (座標辨識)">🧭 導航員 (經緯度鎖定)</option>
+            <option value="記錄員 (數據採集)">📝 記錄員 (地標特徵登錄)</option>
+            <option value="計算員 (距離與高程)">🧮 計算員 (距離與高度差)</option>
+          </select>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Main Content Body -->
+  <main class="max-w-7xl mx-auto w-full p-4 sm:p-6 flex-1">
+
+    <!-- ==================== TAB 1: 經緯度追緝與數感運算 ==================== -->
+    <div id="tab-mission" class="tab-pane space-y-6">
+
+      <!-- Mission Briefing Banner -->
+      <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl border-2 border-indigo-500/30 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div class="space-y-3">
+          <div class="inline-flex items-center gap-2 bg-amber-400 text-slate-950 font-black px-4 py-1.5 rounded-full text-sm">
+            <i class="fa-solid fa-bullhorn"></i> 國際刑警組織紅色通報
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-black text-amber-300">
+            跨國怪盜「莫里亞」最後行蹤鎖定！
+          </h2>
+          <p class="text-slate-300 text-lg leading-relaxed max-w-3xl">
+            怪盜在世界三個神秘角落留下了 10 碼經緯度密碼。請偵探小組輸入 10 碼數字座標，點擊啟動 Google Earth 前往三維地球進行實景探勘；辨識出地標真實名稱與觀測海拔後，返回系統回答驗證！
+          </p>
+        </div>
+        <div class="flex flex-col items-center bg-slate-800/80 p-5 rounded-2xl border border-slate-700 text-center min-w-[200px]">
+          <span class="text-sm font-bold text-slate-400">目前破案進度</span>
+          <div class="text-4xl font-black text-amber-400 my-1">
+            <span id="clue-progress-text">0</span> / 3
+          </div>
+          <span class="text-xs text-emerald-400 font-bold">解鎖所有地標以產出 ORID</span>
+        </div>
+      </div>
+
+      <!-- 3 Global Landmarks Cards Grid (10-Digit Coordinate + Google Earth Explorer) -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Landmark 1: 歐洲神秘坐標線索 -->
+        <div class="bg-white rounded-3xl shadow-lg border-2 border-slate-200 overflow-hidden flex flex-col justify-between transition hover:shadow-2xl">
+          <div class="p-6 space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="bg-blue-100 text-blue-800 font-black px-3 py-1 rounded-xl text-sm">線索檔案 ①</span>
+              <span id="badge-target-1" class="bg-slate-200 text-slate-600 font-bold px-3 py-1 rounded-xl text-sm flex items-center gap-1">
+                <i class="fa-solid fa-lock"></i> 尚未解鎖
+              </span>
+            </div>
+
+            <h3 class="text-xl font-black text-slate-800">
+              🇪🇸 歐洲神秘坐標線索
+            </h3>
+            <p class="text-slate-600 text-base">
+              「怪盜留言：十碼數字密碼已加密，由緯度與經度組合而成，輸入後前往 Google Earth 揭露我的藏匿神殿！」
+            </p>
+
+            <!-- Step 1: Input 10-digit Coordinate -->
+            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+              <div class="flex items-center justify-between">
+                <label class="block text-sm font-black text-slate-700">
+                  步驟 (1) 輸入 10 碼經緯度數字：
+                </label>
+                <span class="text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-lg">提示: 4140302174</span>
+              </div>
+              <input type="text" id="coord-code-1" placeholder="請輸入 10 碼 (例: 4140302174)" oninput="onCoordInputChange(1)"
+                class="w-full bg-white border-2 border-slate-300 rounded-xl px-4 py-2.5 text-lg font-black tracking-wider text-slate-800 focus:border-blue-500 focus:outline-none">
+              
+              <!-- Real-time Coordinate Decoding Helper -->
+              <div id="coord-decode-1" class="text-xs font-bold text-slate-500 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                <i class="fa-solid fa-satellite-dish"></i>
+                <span>座標解構：前 5 碼 41.403 (北緯) + 後 5 碼 02.174 (東經)</span>
+              </div>
+            </div>
+
+            <!-- Step 2: Multi-track Google Earth Launch & Coordinate Copy -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <label class="block text-sm font-black text-slate-700">步驟 (2) 前往實景地圖探勘：</label>
+                <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">精準定位直達</span>
+              </div>
+              
+              <!-- Primary 3D Google Earth direct link -->
+              <button onclick="openGoogleEarth(1, '3d')" 
+                class="w-full py-3.5 px-4 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-black text-base rounded-2xl shadow-md transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-earth-americas text-xl"></i>
+                <span>① 開啟 Google Earth 3D 直達</span>
+              </button>
+
+              <!-- Secondary dual tools for iPad & classroom flexibility -->
+              <div class="grid grid-cols-2 gap-2">
+                <button onclick="copyLandmarkCoords(1)" 
+                  class="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 active:scale-95 text-amber-300 font-bold text-xs rounded-xl shadow transition flex items-center justify-center gap-1.5 border border-slate-700">
+                  <i class="fa-solid fa-copy"></i>
+                  <span>複製經緯度</span>
+                </button>
+                <button onclick="openGoogleEarth(1, 'maps')" 
+                  class="py-2.5 px-3 bg-sky-600 hover:bg-sky-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center gap-1.5">
+                  <i class="fa-solid fa-map-location-dot"></i>
+                  <span>Google Maps 衛星</span>
+                </button>
+              </div>
+              <p class="text-[11px] text-slate-500 font-medium leading-tight">
+                💡 提示：點擊按鈕直接飛往 3D 視角；若使用 iPad 專屬 App 可按「複製經緯度」貼上搜尋！
+              </p>
+            </div>
+
+            <!-- Step 3: Answer Landmark Name & Altitude -->
+            <div class="bg-indigo-50/70 p-4 rounded-2xl border border-indigo-200 space-y-3">
+              <label class="block text-sm font-black text-indigo-950">步驟 (3) 回答 Google Earth 發現的地標名稱：</label>
+              <input type="text" id="landmark-name-1" placeholder="輸入你在地圖上看見的地標名稱" 
+                class="w-full bg-white border-2 border-indigo-300 rounded-xl px-4 py-2.5 text-base font-black text-slate-800 focus:border-indigo-600 focus:outline-none">
+              
+              <div class="flex items-center gap-2">
+                <input type="number" id="alt-val-1" placeholder="觀測海拔公尺 (提示: 54)" 
+                  class="w-full bg-white border-2 border-indigo-300 rounded-xl px-3 py-2 text-sm font-bold focus:border-indigo-600 focus:outline-none">
+                <span class="text-sm font-black text-slate-600 whitespace-nowrap">公尺 (m)</span>
+              </div>
+            </div>
+
+            <!-- Result preview box -->
+            <div id="result-box-1" class="hidden bg-emerald-50 border-2 border-emerald-400 p-4 rounded-2xl text-emerald-950 space-y-1">
+              <div class="font-black text-base flex items-center gap-2">
+                <i class="fa-solid fa-circle-check text-emerald-600 text-lg"></i>
+                <span>成功鎖定：聖家堂 (Sagrada Família)</span>
+              </div>
+              <p class="text-xs text-slate-600">西班牙巴塞隆納 (41.4036°N, 2.1744°E)，海拔 54m，高第建築藝術奇蹟。</p>
+            </div>
+          </div>
+
+          <div class="p-6 bg-slate-50 border-t border-slate-200">
+            <button onclick="verifyLandmarkName(1)" 
+              class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-black text-lg rounded-2xl shadow transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-magnifying-glass-location"></i> 驗證地標名稱與高程
+            </button>
+          </div>
+        </div>
+
+        <!-- Landmark 2: 東方蜿蜒巨龍線索 -->
+        <div class="bg-white rounded-3xl shadow-lg border-2 border-slate-200 overflow-hidden flex flex-col justify-between transition hover:shadow-2xl">
+          <div class="p-6 space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="bg-amber-100 text-amber-800 font-black px-3 py-1 rounded-xl text-sm">線索檔案 ②</span>
+              <span id="badge-target-2" class="bg-slate-200 text-slate-600 font-bold px-3 py-1 rounded-xl text-sm flex items-center gap-1">
+                <i class="fa-solid fa-lock"></i> 尚未解鎖
+              </span>
+            </div>
+
+            <h3 class="text-xl font-black text-slate-800">
+              🇨🇳 東方蜿蜒巨龍線索
+            </h3>
+            <p class="text-slate-600 text-base">
+              「怪盜留言：這座依山而建的世界奇蹟跨越崇山峻嶺，透過座標尋找高聳城垛的真面目！」
+            </p>
+
+            <!-- Step 1: Input 10-digit Coordinate -->
+            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+              <div class="flex items-center justify-between">
+                <label class="block text-sm font-black text-slate-700">
+                  步驟 (1) 輸入 10 碼經緯度數字：
+                </label>
+                <span class="text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-lg">提示: 4043211657</span>
+              </div>
+              <input type="text" id="coord-code-2" placeholder="請輸入 10 碼 (例: 4043211657)" oninput="onCoordInputChange(2)"
+                class="w-full bg-white border-2 border-slate-300 rounded-xl px-4 py-2.5 text-lg font-black tracking-wider text-slate-800 focus:border-amber-500 focus:outline-none">
+              
+              <!-- Real-time Coordinate Decoding Helper -->
+              <div id="coord-decode-2" class="text-xs font-bold text-slate-500 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                <i class="fa-solid fa-satellite-dish"></i>
+                <span>座標解構：前 5 碼 40.432 (北緯) + 後 5 碼 116.57 (東經)</span>
+              </div>
+            </div>
+
+            <!-- Step 2: Multi-track Google Earth Launch & Coordinate Copy -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <label class="block text-sm font-black text-slate-700">步驟 (2) 前往實景地圖探勘：</label>
+                <span class="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">精準定位直達</span>
+              </div>
+              
+              <!-- Primary 3D Google Earth direct link -->
+              <button onclick="openGoogleEarth(2, '3d')" 
+                class="w-full py-3.5 px-4 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-black text-base rounded-2xl shadow-md transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-earth-americas text-xl"></i>
+                <span>① 開啟 Google Earth 3D 直達</span>
+              </button>
+
+              <!-- Secondary dual tools for iPad & classroom flexibility -->
+              <div class="grid grid-cols-2 gap-2">
+                <button onclick="copyLandmarkCoords(2)" 
+                  class="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 active:scale-95 text-amber-300 font-bold text-xs rounded-xl shadow transition flex items-center justify-center gap-1.5 border border-slate-700">
+                  <i class="fa-solid fa-copy"></i>
+                  <span>複製經緯度</span>
+                </button>
+                <button onclick="openGoogleEarth(2, 'maps')" 
+                  class="py-2.5 px-3 bg-sky-600 hover:bg-sky-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center gap-1.5">
+                  <i class="fa-solid fa-map-location-dot"></i>
+                  <span>Google Maps 衛星</span>
+                </button>
+              </div>
+              <p class="text-[11px] text-slate-500 font-medium leading-tight">
+                💡 提示：點擊按鈕直接飛往 3D 視角；若使用 iPad 專屬 App 可按「複製經緯度」貼上搜尋！
+              </p>
+            </div>
+
+            <!-- Step 3: Answer Landmark Name & Altitude -->
+            <div class="bg-amber-50/70 p-4 rounded-2xl border border-amber-200 space-y-3">
+              <label class="block text-sm font-black text-amber-950">步驟 (3) 回答 Google Earth 發現的地標名稱：</label>
+              <input type="text" id="landmark-name-2" placeholder="輸入你在地圖上看見的地標名稱" 
+                class="w-full bg-white border-2 border-amber-300 rounded-xl px-4 py-2.5 text-base font-black text-slate-800 focus:border-amber-600 focus:outline-none">
+              
+              <div class="flex items-center gap-2">
+                <input type="number" id="alt-val-2" placeholder="觀測海拔公尺 (提示: 720)" 
+                  class="w-full bg-white border-2 border-amber-300 rounded-xl px-3 py-2 text-sm font-bold focus:border-amber-600 focus:outline-none">
+                <span class="text-sm font-black text-slate-600 whitespace-nowrap">公尺 (m)</span>
+              </div>
+            </div>
+
+            <!-- Result preview box -->
+            <div id="result-box-2" class="hidden bg-emerald-50 border-2 border-emerald-400 p-4 rounded-2xl text-emerald-950 space-y-1">
+              <div class="font-black text-base flex items-center gap-2">
+                <i class="fa-solid fa-circle-check text-emerald-600 text-lg"></i>
+                <span>成功鎖定：萬里長城 (慕田峪段)</span>
+              </div>
+              <p class="text-xs text-slate-600">中國北京 (40.4319°N, 116.5704°E)，海拔約 720m，綿延群山之防禦幾何。</p>
+            </div>
+          </div>
+
+          <div class="p-6 bg-slate-50 border-t border-slate-200">
+            <button onclick="verifyLandmarkName(2)" 
+              class="w-full py-3.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-black text-lg rounded-2xl shadow transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-magnifying-glass-location"></i> 驗證地標名稱與高程
+            </button>
+          </div>
+        </div>
+
+        <!-- Landmark 3: 沙漠四角錐奇蹟線索 -->
+        <div class="bg-white rounded-3xl shadow-lg border-2 border-slate-200 overflow-hidden flex flex-col justify-between transition hover:shadow-2xl">
+          <div class="p-6 space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="bg-emerald-100 text-emerald-800 font-black px-3 py-1 rounded-xl text-sm">線索檔案 ③</span>
+              <span id="badge-target-3" class="bg-slate-200 text-slate-600 font-bold px-3 py-1 rounded-xl text-sm flex items-center gap-1">
+                <i class="fa-solid fa-lock"></i> 尚未解鎖
+              </span>
+            </div>
+
+            <h3 class="text-xl font-black text-slate-800">
+              🇪🇬 沙漠四角錐奇蹟線索
+            </h3>
+            <p class="text-slate-600 text-base">
+              「怪盜留言：四角錐的黃金方位與尼羅河畔的古老智慧，輸入十碼坐標揭曉它的偉大名字！」
+            </p>
+
+            <!-- Step 1: Input 10-digit Coordinate -->
+            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+              <div class="flex items-center justify-between">
+                <label class="block text-sm font-black text-slate-700">
+                  步驟 (1) 輸入 10 碼經緯度數字：
+                </label>
+                <span class="text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-lg">提示: 2997931134</span>
+              </div>
+              <input type="text" id="coord-code-3" placeholder="請輸入 10 碼 (例: 2997931134)" oninput="onCoordInputChange(3)"
+                class="w-full bg-white border-2 border-slate-300 rounded-xl px-4 py-2.5 text-lg font-black tracking-wider text-slate-800 focus:border-emerald-500 focus:outline-none">
+              
+              <!-- Real-time Coordinate Decoding Helper -->
+              <div id="coord-decode-3" class="text-xs font-bold text-slate-500 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                <i class="fa-solid fa-satellite-dish"></i>
+                <span>座標解構：前 5 碼 29.979 (北緯) + 後 5 碼 31.134 (東經)</span>
+              </div>
+            </div>
+
+            <!-- Step 2: Multi-track Google Earth Launch & Coordinate Copy -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <label class="block text-sm font-black text-slate-700">步驟 (2) 前往實景地圖探勘：</label>
+                <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">精準定位直達</span>
+              </div>
+              
+              <!-- Primary 3D Google Earth direct link -->
+              <button onclick="openGoogleEarth(3, '3d')" 
+                class="w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black text-base rounded-2xl shadow-md transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-earth-americas text-xl"></i>
+                <span>① 開啟 Google Earth 3D 直達</span>
+              </button>
+
+              <!-- Secondary dual tools for iPad & classroom flexibility -->
+              <div class="grid grid-cols-2 gap-2">
+                <button onclick="copyLandmarkCoords(3)" 
+                  class="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 active:scale-95 text-amber-300 font-bold text-xs rounded-xl shadow transition flex items-center justify-center gap-1.5 border border-slate-700">
+                  <i class="fa-solid fa-copy"></i>
+                  <span>複製經緯度</span>
+                </button>
+                <button onclick="openGoogleEarth(3, 'maps')" 
+                  class="py-2.5 px-3 bg-sky-600 hover:bg-sky-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center gap-1.5">
+                  <i class="fa-solid fa-map-location-dot"></i>
+                  <span>Google Maps 衛星</span>
+                </button>
+              </div>
+              <p class="text-[11px] text-slate-500 font-medium leading-tight">
+                💡 提示：點擊按鈕直接飛往 3D 視角；若使用 iPad 專屬 App 可按「複製經緯度」貼上搜尋！
+              </p>
+            </div>
+
+            <!-- Step 3: Answer Landmark Name & Altitude -->
+            <div class="bg-emerald-50/70 p-4 rounded-2xl border border-emerald-200 space-y-3">
+              <label class="block text-sm font-black text-emerald-950">步驟 (3) 回答 Google Earth 發現的地標名稱：</label>
+              <input type="text" id="landmark-name-3" placeholder="輸入你在地圖上看見的地標名稱" 
+                class="w-full bg-white border-2 border-emerald-300 rounded-xl px-4 py-2.5 text-base font-black text-slate-800 focus:border-emerald-600 focus:outline-none">
+              
+              <div class="flex items-center gap-2">
+                <input type="number" id="alt-val-3" placeholder="觀測海拔公尺 (提示: 65)" 
+                  class="w-full bg-white border-2 border-emerald-300 rounded-xl px-3 py-2 text-sm font-bold focus:border-emerald-600 focus:outline-none">
+                <span class="text-sm font-black text-slate-600 whitespace-nowrap">公尺 (m)</span>
+              </div>
+            </div>
+
+            <!-- Result preview box -->
+            <div id="result-box-3" class="hidden bg-emerald-50 border-2 border-emerald-400 p-4 rounded-2xl text-emerald-950 space-y-1">
+              <div class="font-black text-base flex items-center gap-2">
+                <i class="fa-solid fa-circle-check text-emerald-600 text-lg"></i>
+                <span>成功鎖定：吉薩大金字塔 (埃及)</span>
+              </div>
+              <p class="text-xs text-slate-600">埃及開羅 (29.9792°N, 31.1342°E)，海拔 65m，四角錐精準對稱世界遺產。</p>
+            </div>
+          </div>
+
+          <div class="p-6 bg-slate-50 border-t border-slate-200">
+            <button onclick="verifyLandmarkName(3)" 
+              class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black text-lg rounded-2xl shadow transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-magnifying-glass-location"></i> 驗證地標名稱與高程
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Math Calculator Section: Distance & Elevation Drop Challenge -->
+      <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border-2 border-slate-200 space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4">
+          <div>
+            <h3 class="text-2xl font-black text-slate-900 flex items-center gap-3">
+              <i class="fa-solid fa-calculator text-amber-500"></i>
+              數感運算台：追緝距離與海拔落差驗證
+            </h3>
+            <p class="text-slate-600 text-base mt-1">
+              利用 Google Earth 量測工具觀測到的數值，驗證怪盜逃跑路徑上的幾何與數值邏輯。
+            </p>
+          </div>
+          <span class="bg-indigo-100 text-indigo-800 text-sm font-black px-4 py-1.5 rounded-full self-start sm:self-center">
+            計算員主力任務
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          <!-- Distance Calculation -->
+          <div class="bg-slate-50 p-6 rounded-2xl border-2 border-slate-200 space-y-4">
+            <h4 class="font-black text-lg text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-route text-blue-600"></i>
+              任務 (1) 跨洲直線距離計算與換算
+            </h4>
+            <p class="text-sm text-slate-600">
+              怪盜從「西班牙聖家堂」逃往「埃及大金字塔」。地圖實測直線距離約為 <strong>3,050 公里</strong>。若偵察機平均時速為 <strong>610 公里/小時</strong>，直飛需飛行幾小時？
+            </p>
+            <div class="flex items-center gap-3">
+              <div class="w-full">
+                <label class="block text-xs font-bold text-slate-500 mb-1">計算式：3050 ÷ 610 = ?</label>
+                <input type="number" id="calc-dist-time" placeholder="輸入飛行時數 (小時)" 
+                  class="w-full bg-white border-2 border-slate-300 rounded-xl px-4 py-3 text-lg font-black focus:border-blue-500 focus:outline-none">
+              </div>
+              <button onclick="checkDistanceCalc()" 
+                class="mt-5 px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-black text-base rounded-xl shadow whitespace-nowrap active:scale-95">
+                驗證時數
+              </button>
+            </div>
+            <div id="dist-calc-feedback" class="text-sm font-black"></div>
+          </div>
+
+          <!-- Elevation Calculation -->
+          <div class="bg-slate-50 p-6 rounded-2xl border-2 border-slate-200 space-y-4">
+            <h4 class="font-black text-lg text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-mountain text-amber-600"></i>
+              任務 (2) 海拔高度落差 (落差挑戰)
+            </h4>
+            <p class="text-sm text-slate-600">
+              怪盜從長城高處（海拔 <strong>720 公尺</strong>）向下逃往低海拔開羅金字塔（海拔 <strong>65 公尺</strong>），逃跑過程中的垂直高度差是多少公尺？
+            </p>
+            <div class="flex items-center gap-3">
+              <div class="w-full">
+                <label class="block text-xs font-bold text-slate-500 mb-1">計算式：720 - 65 = ?</label>
+                <input type="number" id="calc-alt-drop" placeholder="輸入垂直落差 (公尺)" 
+                  class="w-full bg-white border-2 border-slate-300 rounded-xl px-4 py-3 text-lg font-black focus:border-amber-500 focus:outline-none">
+              </div>
+              <button onclick="checkAltitudeCalc()" 
+                class="mt-5 px-6 py-3.5 bg-amber-600 hover:bg-amber-700 text-white font-black text-base rounded-xl shadow whitespace-nowrap active:scale-95">
+                驗證落差
+              </button>
+            </div>
+            <div id="alt-calc-feedback" class="text-sm font-black"></div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+
+    <!-- ==================== TAB 2: 建築幾何對稱與街景密碼 ==================== -->
+    <div id="tab-geometry" class="tab-pane hidden space-y-6">
+
+      <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border-2 border-slate-200 space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
+          <div>
+            <h2 class="text-2xl sm:text-3xl font-black text-slate-900 flex items-center gap-3">
+              <i class="fa-solid fa-draw-polygon text-indigo-600"></i>
+              地標周邊街景：幾何特徵與對稱結構解碼
+            </h2>
+            <p class="text-slate-600 text-base mt-1">
+              切換至街景模式，觀察國際地標的幾何圖形、對稱軸及空間比例。點擊互動按鈕切換「對稱軸」輔助線！
+            </p>
+          </div>
+          <span class="bg-purple-100 text-purple-800 text-sm font-black px-4 py-1.5 rounded-full self-start sm:self-center">
+            記錄員主力任務
+          </span>
+        </div>
+
+        <!-- Geometry Interactive Canvas and Controls -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          
+          <!-- Interactive SVG/Canvas Preview -->
+          <div class="lg:col-span-7 bg-slate-950 rounded-3xl p-4 sm:p-6 shadow-inner flex flex-col items-center justify-center min-h-[380px] relative overflow-hidden border-4 border-slate-800">
+            
+            <div class="absolute top-4 left-4 bg-slate-800/90 text-amber-300 text-xs font-black px-3 py-1.5 rounded-xl border border-slate-700 flex items-center gap-2">
+              <i class="fa-solid fa-eye"></i> 建築立面幾何解構圖
+            </div>
+
+            <!-- SVG Geometric Landmark Schema -->
+            <svg id="landmark-svg" viewBox="0 0 500 400" class="w-full max-w-[460px] h-auto drop-shadow-2xl">
+              <!-- Background Grid -->
+              <defs>
+                <pattern id="grid" width="25" height="25" patternUnits="userSpaceOnUse">
+                  <path d="M 25 0 L 0 0 0 25" fill="none" stroke="#1e293b" stroke-width="1"/>
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#grid)" />
+
+              <!-- Ground baseline -->
+              <line x1="30" y1="360" x2="470" y2="360" stroke="#64748b" stroke-width="4" stroke-linecap="round"/>
+
+              <!-- Symmetrical Cathedral / Pyramid Architecture -->
+              <!-- Main Base -->
+              <rect x="120" y="240" width="260" height="120" rx="8" fill="#334155" stroke="#f59e0b" stroke-width="3"/>
+              
+              <!-- Left and Right Pillars (Symmetrical) -->
+              <rect x="140" y="140" width="40" height="100" rx="6" fill="#475569" stroke="#38bdf8" stroke-width="2"/>
+              <rect x="320" y="140" width="40" height="100" rx="6" fill="#475569" stroke="#38bdf8" stroke-width="2"/>
+              
+              <!-- Triangular Spires (Symmetrical) -->
+              <polygon points="140,140 160,50 180,140" fill="#f59e0b" stroke="#fbbf24" stroke-width="2"/>
+              <polygon points="320,140 340,50 360,140" fill="#f59e0b" stroke="#fbbf24" stroke-width="2"/>
+
+              <!-- Central Dome & Main Tower -->
+              <polygon points="200,240 250,90 300,240" fill="#1e293b" stroke="#34d399" stroke-width="3"/>
+              <circle cx="250" cy="180" r="30" fill="#0f172a" stroke="#38bdf8" stroke-width="3"/>
+              
+              <!-- Entrance Arch -->
+              <path d="M 220 360 A 30 30 0 0 1 280 360 Z" fill="#f59e0b"/>
+
+              <!-- Dynamic Symmetry Axis Line (Toggled via JS) -->
+              <g id="symmetry-axis-group" class="transition-opacity duration-300 opacity-0">
+                <line x1="250" y1="20" x2="250" y2="380" stroke="#ef4444" stroke-width="4" stroke-dasharray="8,6"/>
+                <circle cx="250" cy="50" r="6" fill="#ef4444"/>
+                <circle cx="250" cy="360" r="6" fill="#ef4444"/>
+                <text x="260" y="40" fill="#ef4444" font-size="16" font-weight="bold">對稱軸 (Symmetry Axis)</text>
+              </g>
+
+              <!-- Left/Right Symmetrical Corresponding Points -->
+              <g id="symmetry-points-group" class="transition-opacity duration-300 opacity-0">
+                <circle cx="160" cy="50" r="7" fill="#38bdf8"/>
+                <text x="110" y="45" fill="#38bdf8" font-size="14" font-weight="bold">對稱點 A</text>
+                
+                <circle cx="340" cy="50" r="7" fill="#38bdf8"/>
+                <text x="355" y="45" fill="#38bdf8" font-size="14" font-weight="bold">對稱點 A'</text>
+              </g>
+            </svg>
+
+            <!-- Overlay toggle buttons -->
+            <div class="mt-4 flex flex-wrap gap-3">
+              <button onclick="toggleSymmetryAxis()" id="btn-toggle-axis" 
+                class="px-5 py-2.5 bg-red-600/90 hover:bg-red-600 text-white rounded-xl font-bold text-sm flex items-center gap-2 shadow transition">
+                <i class="fa-solid fa-arrows-split-up-and-left"></i> 顯示/隱藏 對稱軸
+              </button>
+              <button onclick="toggleSymmetryPoints()" id="btn-toggle-points" 
+                class="px-5 py-2.5 bg-sky-600/90 hover:bg-sky-600 text-white rounded-xl font-bold text-sm flex items-center gap-2 shadow transition">
+                <i class="fa-solid fa-draw-polygon"></i> 標記對稱點與邊
+              </button>
+            </div>
+          </div>
+
+          <!-- Geometric Questions for Detective Log -->
+          <div class="lg:col-span-5 space-y-5">
+            <div class="bg-amber-50 p-6 rounded-2xl border-2 border-amber-300 space-y-4">
+              <h3 class="text-xl font-black text-amber-950 flex items-center gap-2">
+                <i class="fa-solid fa-clipboard-question text-amber-600"></i>
+                街景幾何密碼任務單
+              </h3>
+
+              <!-- Question 1 -->
+              <div class="space-y-2">
+                <label class="block font-bold text-slate-800 text-base">
+                  1. 觀察此建築立面，左右兩側形狀完全疊合，它具備幾條垂直「對稱軸」？
+                </label>
+                <div class="grid grid-cols-3 gap-2">
+                  <button onclick="selectGeoAnswer(1, '1')" class="geo-opt-1 py-2.5 bg-white border-2 border-slate-300 rounded-xl font-black text-slate-700 hover:border-amber-500">1 條</button>
+                  <button onclick="selectGeoAnswer(1, '2')" class="geo-opt-1 py-2.5 bg-white border-2 border-slate-300 rounded-xl font-black text-slate-700 hover:border-amber-500">2 條</button>
+                  <button onclick="selectGeoAnswer(1, '4')" class="geo-opt-1 py-2.5 bg-white border-2 border-slate-300 rounded-xl font-black text-slate-700 hover:border-amber-500">4 條</button>
+                </div>
+              </div>
+
+              <!-- Question 2 -->
+              <div class="space-y-2">
+                <label class="block font-bold text-slate-800 text-base">
+                  2. 兩座尖塔頂端（點A與點A'）到中央對稱軸的直線距離關係為？
+                </label>
+                <div class="grid grid-cols-2 gap-2">
+                  <button onclick="selectGeoAnswer(2, 'equal')" class="geo-opt-2 py-2.5 bg-white border-2 border-slate-300 rounded-xl font-black text-slate-700 hover:border-amber-500">等距離 (相等)</button>
+                  <button onclick="selectGeoAnswer(2, 'diff')" class="geo-opt-2 py-2.5 bg-white border-2 border-slate-300 rounded-xl font-black text-slate-700 hover:border-amber-500">不相等</button>
+                </div>
+              </div>
+
+              <!-- Question 3 -->
+              <div class="space-y-2">
+                <label class="block font-bold text-slate-800 text-base">
+                  3. 地標中央拱門為半圓形，若拱門底寬為 6 公尺，則對稱軸左右兩側各為多少公尺？
+                </label>
+                <div class="flex items-center gap-2">
+                  <input type="number" id="geo-arch-half" placeholder="輸入公尺數" 
+                    class="w-full bg-white border-2 border-slate-300 rounded-xl px-4 py-2.5 font-black text-lg focus:border-amber-500 focus:outline-none">
+                  <button onclick="checkGeoArch()" 
+                    class="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-black text-base rounded-xl shadow whitespace-nowrap active:scale-95">
+                    驗證
+                  </button>
+                </div>
+                <p id="geo-arch-msg" class="text-xs font-black"></p>
+              </div>
+
+            </div>
+
+            <div class="p-4 bg-emerald-50 border-2 border-emerald-400 rounded-2xl text-emerald-900 text-sm font-bold flex items-center gap-3">
+              <i class="fa-solid fa-lightbulb text-emerald-600 text-2xl"></i>
+              <span>數感偵探筆記：古代偉大建築常利用「垂直線對稱」達到力學重心的平衡與視覺美感！</span>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- ==================== TAB 3: ORID 成果展示與圖片匯出 ==================== -->
+    <div id="tab-orid" class="tab-pane hidden space-y-6">
+
+      <!-- Action Banner -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border-2 border-slate-200 shadow-md">
+        <div>
+          <h2 class="text-2xl sm:text-3xl font-black text-slate-900 flex items-center gap-3">
+            <i class="fa-solid fa-graduation-cap text-amber-500"></i>
+            任務成果證書與 ORID 焦點反思
+          </h2>
+          <p class="text-slate-600 text-base mt-1">
+            恭喜偵探小組！此頁已自動彙整你們在經緯度定位、距離計算與幾何解鎖的成果，請完成反思並匯出圖片！
+          </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+          <button onclick="autoFillOridSample()" 
+            class="px-5 py-3.5 bg-slate-200 hover:bg-slate-300 active:scale-95 text-slate-800 font-black text-base rounded-2xl shadow transition flex items-center gap-2">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> 載入偵探反思範例
+          </button>
+          <button onclick="exportResultImage()" 
+            class="px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black text-lg rounded-2xl shadow-xl transition flex items-center gap-2">
+            <i class="fa-solid fa-file-image"></i> 匯出成果為圖片檔
+          </button>
+        </div>
+      </div>
+
+      <!-- Printable/Exportable Certificate Card Area (Captured by html2canvas) -->
+      <div id="export-card-area" class="bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950 text-white rounded-3xl p-6 sm:p-10 shadow-2xl border-4 border-amber-500 space-y-8 relative overflow-hidden">
+        
+        <!-- Watermark / Background Deco -->
+        <div class="absolute -right-16 -bottom-16 text-slate-800/40 text-[240px] pointer-events-none select-none">
+          <i class="fa-solid fa-stamp"></i>
+        </div>
+
+        <!-- Header Ribbon -->
+        <div class="flex flex-col md:flex-row items-center justify-between border-b-2 border-amber-500/50 pb-6 gap-4">
+          <div class="flex items-center gap-4">
+            <div class="w-16 h-16 bg-amber-500 text-slate-950 rounded-3xl flex items-center justify-center text-3xl font-black shadow-lg">
+              <i class="fa-solid fa-user-secret"></i>
+            </div>
+            <div>
+              <span class="text-amber-400 font-bold text-sm tracking-widest uppercase">Global Math Detective Academy</span>
+              <h2 class="text-2xl sm:text-3xl font-black text-white">期末數感偵探結業證書</h2>
+            </div>
+          </div>
+          <div class="text-right bg-slate-800/80 px-6 py-3 rounded-2xl border border-slate-700">
+            <div class="text-sm text-slate-400">認證學員</div>
+            <div class="text-xl font-black text-amber-300">
+              <span id="cert-class">五年一班</span> <span id="cert-seat">28號</span> <span id="cert-name">野比大雄</span>
+            </div>
+            <div class="text-xs text-emerald-400 font-bold mt-0.5" id="cert-role">
+              任務角色：導航員 (經緯度鎖定)
+            </div>
+          </div>
+        </div>
+
+        <!-- Investigation Badges & Quantitative Metrics -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="bg-slate-800/90 p-4 rounded-2xl border border-slate-700 text-center space-y-1">
+            <span class="text-xs text-slate-400 font-bold">解鎖國際地標</span>
+            <div class="text-2xl font-black text-amber-400" id="cert-landmarks-count">3 / 3 座</div>
+            <span class="text-xs text-slate-300">聖家堂、長城、大金字塔</span>
+          </div>
+
+          <div class="bg-slate-800/90 p-4 rounded-2xl border border-slate-700 text-center space-y-1">
+            <span class="text-xs text-slate-400 font-bold">航線運算時數</span>
+            <div class="text-2xl font-black text-sky-400" id="cert-distance-metric">5.0 小時</div>
+            <span class="text-xs text-slate-300">3050km ÷ 610km/h 驗證完畢</span>
+          </div>
+
+          <div class="bg-slate-800/90 p-4 rounded-2xl border border-slate-700 text-center space-y-1">
+            <span class="text-xs text-slate-400 font-bold">極限高度落差</span>
+            <div class="text-2xl font-black text-emerald-400" id="cert-altitude-metric">655 公尺</div>
+            <span class="text-xs text-slate-300">慕田峪 720m - 金字塔 65m</span>
+          </div>
+        </div>
+
+        <!-- ORID 4-Dimension Reflection Boxes -->
+        <div class="space-y-4">
+          <div class="flex items-center gap-2 text-amber-400 font-black text-xl">
+            <i class="fa-solid fa-comments"></i>
+            <span>ORID 焦點反思與偵探智慧統整</span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            
+            <!-- [O] Objective 客觀事實 -->
+            <div class="bg-slate-800/90 p-5 rounded-2xl border-2 border-slate-700 space-y-2">
+              <div class="flex items-center gap-2 text-amber-300 font-black text-lg">
+                <span class="w-8 h-8 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-400">O</span>
+                <h4>[O] 客觀事實 (Objective)</h4>
+              </div>
+              <p class="text-xs text-slate-400">在今天的追緝任務中，你們小組一共找到了哪幾個國家或地標？使用了哪些數學概念？</p>
+              <textarea id="orid-o" rows="3" 
+                class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-slate-100 font-bold text-base focus:border-amber-400 focus:outline-none"
+                placeholder="例如：我們利用經緯度 (N/S, E/W) 鎖定了西班牙聖家堂、中國萬里長城與埃及大金字塔，並運用除法算出 3050km 直線距離飛行時間，以及減法算出 655m 海拔高程落差..."></textarea>
+            </div>
+
+            <!-- [R] Reflective 感受反應 -->
+            <div class="bg-slate-800/90 p-5 rounded-2xl border-2 border-slate-700 space-y-2">
+              <div class="flex items-center gap-2 text-sky-300 font-black text-lg">
+                <span class="w-8 h-8 rounded-xl bg-sky-500/20 flex items-center justify-center text-sky-400">R</span>
+                <h4>[R] 感受反應 (Reflective)</h4>
+              </div>
+              <p class="text-xs text-slate-400">當成功在 Google Earth 上精準定位到目標時，組員們的心情與即時反應是什麼？</p>
+              <textarea id="orid-r" rows="3" 
+                class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-slate-100 font-bold text-base focus:border-sky-400 focus:outline-none"
+                placeholder="例如：當畫面從外太空急速俯衝降落到聖家堂的尖塔時，全組驚呼連連！一開始東經西經容易按錯，但互相除錯後成功解鎖，超有成就感！"></textarea>
+            </div>
+
+            <!-- [I] Interpretive 詮釋意義 -->
+            <div class="bg-slate-800/90 p-5 rounded-2xl border-2 border-slate-700 space-y-2">
+              <div class="flex items-center gap-2 text-emerald-300 font-black text-lg">
+                <span class="w-8 h-8 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400">I</span>
+                <h4>[I] 詮釋意義 (Interpretive)</h4>
+              </div>
+              <p class="text-xs text-slate-400">為什麼「經緯度」或「距離」對現代偵探或導航專家來說，是不可或缺的數感工具？</p>
+              <textarea id="orid-i" rows="3" 
+                class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-slate-100 font-bold text-base focus:border-emerald-400 focus:outline-none"
+                placeholder="例如：地球是一個巨大立體球體，如果沒有經緯度的精確網格，就無法在茫茫大海或沙漠中確認位置；知道距離和速度才能正確調配資源與時間！"></textarea>
+            </div>
+
+            <!-- [D] Decisional 做出決定 -->
+            <div class="bg-slate-800/90 p-5 rounded-2xl border-2 border-slate-700 space-y-2">
+              <div class="flex items-center gap-2 text-purple-300 font-black text-lg">
+                <span class="w-8 h-8 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400">D</span>
+                <h4>[D] 做出決定 (Decisional)</h4>
+              </div>
+              <p class="text-xs text-slate-400">如果你是怪盜，你會利用什麼樣的數學規律來隱藏下一個逃逸地點？</p>
+              <textarea id="orid-d" rows="3" 
+                class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-slate-100 font-bold text-base focus:border-purple-400 focus:outline-none"
+                placeholder="例如：我會把下一個藏匿點的經緯度設為「質數」與「公倍數」的密碼交集點，或者藏在具有多重旋轉對稱的幾何迷宮建築裡，考驗偵探們的數學實力！"></textarea>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Certificate Signatures Footer -->
+        <div class="flex flex-col sm:flex-row items-center justify-between pt-6 border-t border-slate-800 text-xs text-slate-400 gap-4">
+          <div class="flex items-center gap-3">
+            <span class="w-10 h-10 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-stamp"></i>
+            </span>
+            <div>
+              <div class="text-white font-bold text-sm">數感實驗室評量委員會 認證核發</div>
+              <div>評量向度：空間座標、跨域數感、團隊合作與 ORID 後設反思</div>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="font-bold text-slate-300">認證代碼：DET-5U-2026W19</div>
+            <div>發證日期：2026 年 09 月</div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+
+  <!-- Strict Footer (Only specified text in center) -->
+  <footer class="bg-slate-900 border-t border-slate-800 text-slate-400 text-sm sm:text-base py-5 px-4 text-center font-bold tracking-wider">
+    數感實驗室  | 互動學習系統 | Design：S.C. Kuo
+  </footer>
+
+
+  <!-- Dynamic QR Code Modal -->
+  <div id="modal-qr" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 text-center space-y-6 shadow-2xl border-4 border-amber-400">
+      
+      <div class="flex items-center justify-between border-b pb-4">
+        <h3 class="text-2xl font-black text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-qrcode text-amber-500"></i>
+          動態即時掃碼
+        </h3>
+        <button onclick="closeQrModal()" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-xl flex items-center justify-center">
+          &times;
+        </button>
+      </div>
+
+      <p class="text-slate-600 text-base">
+        請使用 iPad 相機直接掃描下方二維碼，即可立刻加入此堂偵探追緝課堂！
+      </p>
+
+      <!-- Dynamic QR Code Canvas Container -->
+      <div class="flex justify-center p-4 bg-slate-50 rounded-2xl border-2 border-slate-200">
+        <div id="qrcode-container" class="p-2 bg-white rounded-xl shadow"></div>
+      </div>
+
+      <!-- Current URL display & Copy Action -->
+      <div class="space-y-3">
+        <div class="text-xs text-slate-500 font-mono truncate px-3 py-2 bg-slate-100 rounded-xl border border-slate-200" id="current-url-text">
+          https://...
+        </div>
+
+        <button onclick="copyCurrentUrl()" 
+          class="w-full py-4 bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 font-black text-lg rounded-2xl shadow-lg transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-copy"></i>
+          <span id="btn-copy-label">一鍵複製網址</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- Course Guide Modal (課程設計說明) -->
+  <div id="modal-guide" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl border-4 border-emerald-400 overflow-hidden">
+      
+      <!-- Modal Header -->
+      <div class="p-6 bg-slate-900 text-white flex items-center justify-between border-b-2 border-emerald-400">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 bg-emerald-500 text-slate-950 rounded-2xl flex items-center justify-center text-2xl font-black">
+            <i class="fa-solid fa-book-open"></i>
+          </div>
+          <div>
+            <h3 class="text-2xl font-black text-amber-300">課程設計說明</h3>
+            <span class="text-xs text-slate-400">第 19 週：期末偵探任務 (五上校定數感實驗室)</span>
+          </div>
+        </div>
+        <button onclick="closeGuideModal()" class="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-black text-xl flex items-center justify-center">
+          &times;
+        </button>
+      </div>
+
+      <!-- Modal Scrollable Content -->
+      <div class="p-6 sm:p-8 overflow-y-auto space-y-6 text-slate-800">
+        
+        <!-- Part 1: 學習目標 -->
+        <div class="space-y-3">
+          <h4 class="text-xl font-black text-indigo-900 flex items-center gap-2 border-b-2 border-indigo-200 pb-2">
+            <i class="fa-solid fa-bullseye text-indigo-600"></i>
+            一、學習目標
+          </h4>
+          <ul class="list-disc pl-6 space-y-2 text-base text-slate-700 leading-relaxed">
+            <li><strong>【數學領域】</strong>學生能正確辨識球體座標系統中的「東經(E)/西經(W)」與「北緯(N)/南緯(S)」，並透過 Google Earth 量測跨國直線距離與海拔高度差。</li>
+            <li><strong>【綜合活動 2b-Ⅲ-1】</strong>落實團隊合作分工，適切扮演「導航員、記錄員、計算員」角色，共同達成破案目標。</li>
+            <li><strong>【空間幾何 S-5-4】</strong>透過國際著名建築街景，觀察並標記垂直「線對稱」幾何結構與空間對應關係。</li>
+            <li><strong>【議題融入】</strong>融入國際教育【國E4】（認識跨文化國際遺產地標）與資訊教育【資E2】（運用數位科技工具解決生活情境問題）。</li>
+          </ul>
+        </div>
+
+        <!-- Part 2: 網頁操作說明 -->
+        <div class="space-y-3">
+          <h4 class="text-xl font-black text-amber-900 flex items-center gap-2 border-b-2 border-amber-200 pb-2">
+            <i class="fa-solid fa-gamepad text-amber-600"></i>
+            二、網頁操作說明
+          </h4>
+          <ol class="list-decimal pl-6 space-y-2 text-base text-slate-700 leading-relaxed">
+            <li><strong>班級座號設定</strong>：於頂部選單挑選學生所屬班級（五1~五14）與座號（1~28），並勾選今日負責之任務角色。</li>
+            <li><strong>① 經緯度追緝（10碼座標探勘）</strong>：於各線索卡片中輸入 10 碼經緯度數字，點擊「開啟 Google Earth」直達地表 3D 街景探勘，觀察地標後返回系統輸入地標真實名稱與海拔高度進行驗證！</li>
+            <li><strong>② 建築幾何密碼</strong>：操作對稱軸開關，觀察建築物線對稱與對稱點，完成 3 題幾何密碼任務。</li>
+            <li><strong>③ ORID 成果反思</strong>：各階段完成之數據將自動同步至結業證書，組員可合力編輯 4 個層次的反思心得，最後點擊「匯出成果為圖片檔」儲存評量紀錄。</li>
+          </ol>
+        </div>
+
+        <!-- Part 3: 課堂提問建議 -->
+        <div class="space-y-3">
+          <h4 class="text-xl font-black text-emerald-900 flex items-center gap-2 border-b-2 border-emerald-200 pb-2">
+            <i class="fa-solid fa-circle-question text-emerald-600"></i>
+            三、課堂提問建議 (ORID 焦點討論法)
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            <div class="p-3 bg-amber-50 rounded-xl border border-amber-200">
+              <strong class="text-amber-900 block">[O 客觀事實]</strong>
+              「在今天輸入座標時，你們小組發現座標上的『E/W』和『N/S』代表什麼？如果南北緯搞混，地圖會飛到哪裡？」
+            </div>
+            <div class="p-3 bg-sky-50 rounded-xl border border-sky-200">
+              <strong class="text-sky-900 block">[R 感受反應]</strong>
+              「在操作 Google Earth 從空中俯瞰聖家堂與長城時，組內看到地標跳出來時有什麼心情？」
+            </div>
+            <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200">
+              <strong class="text-emerald-900 block">[I 詮釋意義]</strong>
+              「為什麼現代飛機導航或手機外送，不能只說『在學校旁邊』，而必須使用精確經緯度？」
+            </div>
+            <div class="p-3 bg-purple-50 rounded-xl border border-purple-200">
+              <strong class="text-purple-900 block">[D 做出決定]</strong>
+              「如果你要設計一張尋寶地圖給下一班同學，你會利用什麼樣的幾何對稱或座標規律來出題？」
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-4 bg-slate-100 border-t flex justify-end">
+        <button onclick="closeGuideModal()" class="px-6 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-black text-base rounded-xl">
+          了解並返回任務
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- Toast Notification System -->
+  <div id="toast" class="fixed bottom-16 left-1/2 transform -translate-x-1/2 bg-slate-900/95 text-white px-6 py-3.5 rounded-2xl shadow-2xl border-2 border-amber-400 font-black text-base flex items-center gap-3 z-50 opacity-0 pointer-events-none transition-all duration-300">
+    <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 text-xl"></i>
+    <span id="toast-msg">操作成功！</span>
+  </div>
+
+
+  <script>
+    // State Tracking
+    const AppState = {
+      className: "五年一班",
+      seatNumber: "28號",
+      studentName: "野比大雄",
+      role: "導航員 (經緯度鎖定)",
+      landmarksUnlocked: { 1: false, 2: false, 3: false },
+      distanceSolved: false,
+      altitudeSolved: false,
+      geoAnswers: { q1: null, q2: null, q3: false }
+    };
+
+    // Global Landmarks Database with Verified 3D Camera Targets & Coordinates
+    const LandmarksMaster = {
+      1: {
+        officialName: "聖家堂",
+        aliases: ["聖家堂", "聖家宗座聖殿", "聖家族大教堂", "聖家族", "sagrada familia", "sagrada", "高第", "高迪"],
+        targetCode: "4140302174",
+        lat: 41.4036,
+        lon: 2.1744,
+        targetAlt: 54,
+        // Verified direct 3D fly-in camera URL (Elevation 54m, Range 680m, Tilt 50deg)
+        earthDirectUrl: "https://earth.google.com/web/@41.40363,2.17436,54a,680d,35y,0h,50t,0r",
+        // Coordinate search fallback URL
+        earthSearchUrl: "https://earth.google.com/web/search/41.4036,+2.1744",
+        // Google Maps satellite view with pinpoint marker
+        mapsUrl: "https://www.google.com/maps/search/?api=1&query=41.4036,2.1744",
+        displayLoc: "西班牙巴塞隆納",
+        coordFormatted: "41.4036, 2.1744",
+        coordDesc: "北緯 41.4036°N，東經 2.1744°E"
+      },
+      2: {
+        officialName: "萬里長城",
+        aliases: ["萬里長城", "長城", "慕田峪長城", "慕田峪", "great wall", "great wall of china", "the great wall", "八達嶺", "八達嶺長城", "居庸關", "金山嶺"],
+        targetCode: "4043211657",
+        lat: 40.4319,
+        lon: 116.5704,
+        targetAlt: 720,
+        // Verified direct 3D fly-in camera URL (Elevation 720m, Range 1200m, Tilt 55deg)
+        earthDirectUrl: "https://earth.google.com/web/@40.43191,116.57037,720a,1200d,35y,0h,55t,0r",
+        // Coordinate search fallback URL
+        earthSearchUrl: "https://earth.google.com/web/search/40.4319,+116.5704",
+        // Google Maps satellite view with pinpoint marker
+        mapsUrl: "https://www.google.com/maps/search/?api=1&query=40.4319,116.5704",
+        displayLoc: "中國北京 (慕田峪段)",
+        coordFormatted: "40.4319, 116.5704",
+        coordDesc: "北緯 40.4319°N，東經 116.5704°E"
+      },
+      3: {
+        officialName: "吉薩金字塔",
+        aliases: ["吉薩金字塔", "金字塔", "大金字塔", "埃及金字塔", "胡夫金字塔", "pyramid", "giza", "吉薩", "開羅金字塔", "卡夫拉"],
+        targetCode: "2997931134",
+        lat: 29.9792,
+        lon: 31.1342,
+        targetAlt: 65,
+        // Verified direct 3D fly-in camera URL (Elevation 65m, Range 900m, Tilt 50deg)
+        earthDirectUrl: "https://earth.google.com/web/@29.97918,31.13418,65a,900d,35y,0h,50t,0r",
+        // Coordinate search fallback URL
+        earthSearchUrl: "https://earth.google.com/web/search/29.9792,+31.1342",
+        // Google Maps satellite view with pinpoint marker
+        mapsUrl: "https://www.google.com/maps/search/?api=1&query=29.9792,31.1342",
+        displayLoc: "埃及開羅",
+        coordFormatted: "29.9792, 31.1342",
+        coordDesc: "北緯 29.9792°N，東經 31.1342°E"
+      }
+    };
+
+    // Web Audio Sound Generator (No external MP3 URLs)
+    const AudioEngine = {
+      ctx: null,
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+      },
+      playSuccess() {
+        try {
+          this.init();
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = "sine";
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          
+          const now = this.ctx.currentTime;
+          osc.frequency.setValueAtTime(523.25, now); // C5
+          osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+          osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+          osc.frequency.setValueAtTime(1046.50, now + 0.3); // C6
+          
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+          osc.start(now);
+          osc.stop(now + 0.5);
+        } catch (e) {}
+      },
+      playAlert() {
+        try {
+          this.init();
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = "square";
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          
+          const now = this.ctx.currentTime;
+          osc.frequency.setValueAtTime(220, now);
+          osc.frequency.setValueAtTime(160, now + 0.15);
+          
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+          osc.start(now);
+          osc.stop(now + 0.35);
+        } catch (e) {}
+      }
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      populateClassAndSeatSelectors();
+      updateProfile();
+      setupQrCode();
+    });
+
+    // Populate dropdown selectors: 5年1班 ~ 5年14班, 1 ~ 28
+    function populateClassAndSeatSelectors() {
+      const classSelect = document.getElementById('student-class');
+      const seatSelect = document.getElementById('student-seat');
+      
+      const chineseNumbers = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "十一", "十二", "十三", "十四"];
+      
+      classSelect.innerHTML = "";
+      chineseNumbers.forEach((num, index) => {
+        const opt = document.createElement('option');
+        opt.value = `五年${num}班`;
+        opt.textContent = `五年${num}班`;
+        if (index === 0) opt.selected = true; // Default 5年1班
+        classSelect.appendChild(opt);
+      });
+
+      seatSelect.innerHTML = "";
+      for (let i = 1; i <= 28; i++) {
+        const opt = document.createElement('option');
+        opt.value = `${i}號`;
+        opt.textContent = `${i} 號`;
+        if (i === 28) opt.selected = true; // Default 28號
+        seatSelect.appendChild(opt);
+      }
+    }
+
+    // Synchronize Student Profile with Certificate
+    function updateProfile() {
+      AppState.className = document.getElementById('student-class').value;
+      AppState.seatNumber = document.getElementById('student-seat').value;
+      AppState.studentName = document.getElementById('student-name').value || "野比大雄";
+      AppState.role = document.getElementById('student-role').value;
+
+      document.getElementById('cert-class').textContent = AppState.className;
+      document.getElementById('cert-seat').textContent = AppState.seatNumber;
+      document.getElementById('cert-name').textContent = AppState.studentName;
+      document.getElementById('cert-role').textContent = `任務角色：${AppState.role}`;
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-amber-500', 'text-slate-950', 'shadow-md');
+        btn.classList.add('text-slate-300');
+      });
+
+      const targetPane = document.getElementById(`tab-${tabId}`);
+      const targetBtn = document.getElementById(`tab-btn-${tabId}`);
+
+      if (targetPane && targetBtn) {
+        targetPane.classList.remove('hidden');
+        targetBtn.classList.add('bg-amber-500', 'text-slate-950', 'shadow-md');
+        targetBtn.classList.remove('text-slate-300');
+      }
+
+      // If switching to ORID tab, update quantitative statistics
+      if (tabId === 'orid') {
+        refreshOridMetrics();
+      }
+    }
+
+    // Helper: Normalize 10-digit input string by removing spaces and dashes
+    function cleanCoordInput(str) {
+      return (str || "").trim().replace(/[\s\-_,，°NSEWnsew]/g, '');
+    }
+
+    // Real-time Coordinate Input Decoder
+    function onCoordInputChange(id) {
+      const data = LandmarksMaster[id];
+      const inputEl = document.getElementById(`coord-code-${id}`);
+      const rawCode = cleanCoordInput(inputEl.value);
+      const decodeBox = document.getElementById(`coord-decode-${id}`);
+      if (!decodeBox) return;
+
+      if (!rawCode) {
+        decodeBox.innerHTML = `<i class="fa-solid fa-satellite-dish"></i><span>座標解構：前 5 碼 (緯度) + 後 5 碼 (經度)</span>`;
+        decodeBox.className = "text-xs font-bold text-slate-500 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5";
+      } else if (rawCode === data.targetCode || rawCode.length >= 8) {
+        decodeBox.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600"></i><span class="text-emerald-900 font-black">座標解密成功：${data.coordDesc} (${data.displayLoc})</span>`;
+        decodeBox.className = "text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-sm";
+      } else {
+        decodeBox.innerHTML = `<i class="fa-solid fa-magnifying-glass text-amber-600"></i><span class="text-amber-900">偵探解鎖中：已輸入 ${rawCode.length}/10 碼...</span>`;
+        decodeBox.className = "text-xs font-bold text-amber-800 bg-amber-50 border border-amber-300 px-3 py-1.5 rounded-xl flex items-center gap-1.5";
+      }
+    }
+
+    // Launch Google Earth Web or Maps with precision coordinates
+    function openGoogleEarth(id, mode = '3d') {
+      const data = LandmarksMaster[id];
+      const inputEl = document.getElementById(`coord-code-${id}`);
+      let codeInput = cleanCoordInput(inputEl.value);
+      
+      // Auto-fill prompt if empty for seamless classroom experience
+      if (!codeInput) {
+        inputEl.value = data.targetCode;
+        onCoordInputChange(id);
+      }
+
+      let targetUrl = data.earthDirectUrl;
+      let toastMsg = `🪐 啟動 Google Earth 3D 漫遊：直飛 (${data.lat}°N, ${data.lon}°E)！`;
+
+      if (mode === 'maps') {
+        targetUrl = data.mapsUrl;
+        toastMsg = `🗺️ 開啟 Google Maps 衛星實景：直達 ${data.displayLoc}！`;
+      } else if (mode === 'search') {
+        targetUrl = data.earthSearchUrl;
+        toastMsg = `🔍 透過 Google Earth 座標搜尋定位！`;
+      }
+      
+      // Open in external window
+      window.open(targetUrl, '_blank', 'noopener,noreferrer');
+      AudioEngine.playSuccess();
+      showToast(toastMsg, true);
+    }
+
+    // Copy formatted GPS coordinates for iPad App paste
+    function copyLandmarkCoords(id) {
+      const data = LandmarksMaster[id];
+      const coordsText = data.coordFormatted;
+      
+      // Copy to clipboard with fallback
+      const tempInput = document.createElement('input');
+      tempInput.value = coordsText;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      try {
+        document.execCommand('copy');
+        AudioEngine.playSuccess();
+        showToast(`📋 已複製座標：${coordsText}！可貼入 iPad Google Earth 搜尋定位！`, true);
+      } catch (err) {
+        showToast(`坐標：${coordsText}（請手動選取複製）`, false);
+      }
+      document.body.removeChild(tempInput);
+    }
+
+    // Verify Landmark Name and Altitude against Google Earth Discovery
+    function verifyLandmarkName(id) {
+      const data = LandmarksMaster[id];
+      const rawCode = cleanCoordInput(document.getElementById(`coord-code-${id}`).value);
+      const rawName = (document.getElementById(`landmark-name-${id}`).value || "").trim().toLowerCase();
+      const rawAlt = parseFloat(document.getElementById(`alt-val-${id}`).value);
+
+      // 1. Verify 10-digit coordinate code (with flexible classroom exploration tolerance)
+      const isCodeValid = (rawCode === data.targetCode) || 
+                          (id === 1 && (rawCode.includes("41403") || rawCode.includes("2174"))) ||
+                          (id === 2 && (rawCode.includes("40432") || rawCode.includes("11657") || rawCode.includes("404319"))) ||
+                          (id === 3 && (rawCode.includes("29979") || rawCode.includes("31134"))) ||
+                          (rawCode.length >= 8 && data.targetCode.includes(rawCode.slice(0, 6)));
+
+      if (!isCodeValid) {
+        AudioEngine.playAlert();
+        showToast(`❌ 10 碼經緯度不符！提示密碼為：${data.targetCode}`, false);
+        return;
+      }
+
+      // 2. Verify Landmark Name (Fuzzy keyword match across aliases)
+      if (!rawName) {
+        AudioEngine.playAlert();
+        showToast(`⚠️ 請先輸入你在 Google Earth 觀察到的地標名稱！`, false);
+        return;
+      }
+
+      const isNameMatch = data.aliases.some(alias => rawName.includes(alias.toLowerCase()));
+      if (!isNameMatch) {
+        AudioEngine.playAlert();
+        showToast(`❌ 地標名稱不吻合！請仔細觀察 Google Earth 上的著名建築標籤！`, false);
+        return;
+      }
+
+      // 3. Mark Landmark as Unlocked
+      AppState.landmarksUnlocked[id] = true;
+      AudioEngine.playSuccess();
+
+      // Show Success Visuals
+      document.getElementById(`result-box-${id}`).classList.remove('hidden');
+      const badge = document.getElementById(`badge-target-${id}`);
+      badge.className = "bg-emerald-500 text-white font-black px-3 py-1 rounded-xl text-sm flex items-center gap-1 shadow";
+      badge.innerHTML = `<i class="fa-solid fa-check"></i> 已定位解鎖`;
+
+      showToast(`🎉 偵探推理成功！正確鎖定：${data.officialName} (${data.displayLoc})！`, true);
+      updateClueProgress();
+    }
+
+    function updateClueProgress() {
+      const count = Object.values(AppState.landmarksUnlocked).filter(Boolean).length;
+      document.getElementById('clue-progress-text').textContent = count;
+      document.getElementById('cert-landmarks-count').textContent = `${count} / 3 座`;
+    }
+
+    // Math Verification: Distance
+    function checkDistanceCalc() {
+      const val = parseFloat(document.getElementById('calc-dist-time').value);
+      const fb = document.getElementById('dist-calc-feedback');
+      if (Math.abs(val - 5) < 0.1) {
+        AppState.distanceSolved = true;
+        AudioEngine.playSuccess();
+        fb.className = "text-sm font-black text-emerald-600";
+        fb.innerHTML = "✅ 計算正確！3050 ÷ 610 = 5 小時！";
+        document.getElementById('cert-distance-metric').textContent = "5.0 小時 (驗證成功)";
+      } else {
+        AudioEngine.playAlert();
+        fb.className = "text-sm font-black text-red-500";
+        fb.innerHTML = "❌ 算式有誤，請想想看 3050 ÷ 610 等於多少？";
+      }
+    }
+
+    // Math Verification: Altitude Drop
+    function checkAltitudeCalc() {
+      const val = parseFloat(document.getElementById('calc-alt-drop').value);
+      const fb = document.getElementById('alt-calc-feedback');
+      if (Math.abs(val - 655) < 1) {
+        AppState.altitudeSolved = true;
+        AudioEngine.playSuccess();
+        fb.className = "text-sm font-black text-emerald-600";
+        fb.innerHTML = "✅ 計算正確！720 - 65 = 655 公尺高度落差！";
+        document.getElementById('cert-altitude-metric').textContent = "655 公尺 (落差確認)";
+      } else {
+        AudioEngine.playAlert();
+        fb.className = "text-sm font-black text-red-500";
+        fb.innerHTML = "❌ 數值有誤，請用長城 720m 減去 金字塔 65m。";
+      }
+    }
+
+    let axisVisible = false;
+    let pointsVisible = false;
+
+    function toggleSymmetryAxis() {
+      axisVisible = !axisVisible;
+      const group = document.getElementById('symmetry-axis-group');
+      group.classList.toggle('opacity-0', !axisVisible);
+      showToast(axisVisible ? "已開啟垂直對稱軸（紅色虛線）" : "已關閉對稱軸輔助線", true);
+    }
+
+    function toggleSymmetryPoints() {
+      pointsVisible = !pointsVisible;
+      const group = document.getElementById('symmetry-points-group');
+      group.classList.toggle('opacity-0', !pointsVisible);
+      showToast(pointsVisible ? "已標記對稱點 A 與 A'" : "已隱藏對稱點標記", true);
+    }
+
+    function selectGeoAnswer(qNum, val) {
+      AppState.geoAnswers[`q${qNum}`] = val;
+      document.querySelectorAll(`.geo-opt-${qNum}`).forEach(b => {
+        b.classList.remove('bg-amber-500', 'text-slate-950', 'border-amber-600');
+        b.classList.add('bg-white', 'text-slate-700');
+      });
+
+      event.target.classList.remove('bg-white', 'text-slate-700');
+      event.target.classList.add('bg-amber-500', 'text-slate-950', 'border-amber-600');
+      AudioEngine.playSuccess();
+      showToast("選項已登記！", true);
+    }
+
+    function checkGeoArch() {
+      const val = parseFloat(document.getElementById('geo-arch-half').value);
+      const msg = document.getElementById('geo-arch-msg');
+      if (val === 3) {
+        AppState.geoAnswers.q3 = true;
+        AudioEngine.playSuccess();
+        msg.className = "text-xs font-black text-emerald-600";
+        msg.textContent = "✅ 太棒了！對稱軸將 6 公尺拱門精準平分為左右各 3 公尺！";
+      } else {
+        AudioEngine.playAlert();
+        msg.className = "text-xs font-black text-red-500";
+        msg.textContent = "❌ 請想想看：6 公尺的一半是多少？";
+      }
+    }
+
+    function refreshOridMetrics() {
+      updateProfile();
+      updateClueProgress();
+      if (AppState.distanceSolved) {
+        document.getElementById('cert-distance-metric').textContent = "5.0 小時 (驗證成功)";
+      }
+      if (AppState.altitudeSolved) {
+        document.getElementById('cert-altitude-metric').textContent = "655 公尺 (落差確認)";
+      }
+    }
+
+    function autoFillOridSample() {
+      document.getElementById('orid-o').value = 
+        "在今天的任務中，我們小組利用 GPS 經緯度座標鎖定了「西班牙聖家堂 (41.403°N, 2.174°E)」、「萬里長城 (40.432°N, 116.570°E)」與「吉薩大金字塔 (29.979°N, 31.134°E)」。此外，我們運用除法計算出飛機直飛 3050km 需花費 5 小時，並運用減法算出 720m 與 65m 之間有 655m 的海拔高程落差。在建築上，我們還觀察到了左右完全相等的線對稱結構！";
+
+      document.getElementById('orid-r').value = 
+        "當我們輸入座標、按下衛星定位鍵，畫面瞬間穿過雲層精準降落在地標上時，全組成員都忍不住拍手歡呼！雖然計算員在換算時速時卡關了一下，但記錄員立刻幫忙複查算式，大家分工合作破解密碼的感覺非常刺激又有成就感！";
+
+      document.getElementById('orid-i').value = 
+        "我們發現「經緯度」就像是地球上的門牌號碼，如果沒有精確的座標系統與距離計算，飛機和輪船就會在茫茫大海中迷航。在現代科技中，不管是外送叫車還是無人機救援，都必須仰賴這些精密的數感工具！";
+
+      document.getElementById('orid-d').value = 
+        "如果我是怪盜，我下次會利用「因數與質數」設計出只有特定日期才能解開的座標，或是把寶物藏在具有八重旋轉對稱的伊斯蘭幾何建築中，讓偵探社必須學會更多數學幾何規律才能追蹤到我！";
+
+      AudioEngine.playSuccess();
+      showToast("已為偵探小組填入 ORID 深度反思模組！", true);
+    }
+
+    function exportResultImage() {
+      const card = document.getElementById('export-card-area');
+      showToast("📸 正在為您繪製高畫質成果證書圖片，請稍候...", true);
+
+      // Using html2canvas
+      html2canvas(card, {
+        scale: 2, // High resolution
+        useCORS: true,
+        backgroundColor: '#0f172a'
+      }).then(canvas => {
+        const link = document.createElement('a');
+        const filename = `${AppState.className}_${AppState.seatNumber}_${AppState.studentName}_期末偵探任務成果.png`;
+        link.download = filename;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        AudioEngine.playSuccess();
+        showToast(`🎉 成果已成功匯出為圖片：${filename}`, true);
+      }).catch(err => {
+        showToast("匯出時發生小問題，請使用截圖保存！", false);
+      });
+    }
+
+    function toggleFullScreen() {
+      const icon = document.getElementById('fullscreen-icon');
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+        icon.classList.remove('fa-expand');
+        icon.classList.add('fa-compress');
+        showToast("已切換為全螢幕模式", true);
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+          icon.classList.remove('fa-compress');
+          icon.classList.add('fa-expand');
+          showToast("已退出全螢幕模式", true);
+        }
+      }
+    }
+
+    function setupQrCode() {
+      const currentUrl = window.location.href;
+      document.getElementById('current-url-text').textContent = currentUrl;
+      const container = document.getElementById('qrcode-container');
+      container.innerHTML = "";
+      new QRCode(container, {
+        text: currentUrl,
+        width: 180,
+        height: 180,
+        colorDark: "#0f172a",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+      });
+    }
+
+    function openQrModal() {
+      setupQrCode();
+      document.getElementById('modal-qr').classList.remove('hidden');
+    }
+
+    function closeQrModal() {
+      document.getElementById('modal-qr').classList.add('hidden');
+    }
+
+    function openGuideModal() {
+      document.getElementById('modal-guide').classList.remove('hidden');
+    }
+
+    function closeGuideModal() {
+      document.getElementById('modal-guide').classList.add('hidden');
+    }
+
+    function copyCurrentUrl() {
+      const url = window.location.href;
+      // Using execCommand fallback for iFrame / iPad compatibility
+      const tempInput = document.createElement('input');
+      tempInput.value = url;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      try {
+        document.execCommand('copy');
+        document.getElementById('btn-copy-label').textContent = "網址已複製！";
+        AudioEngine.playSuccess();
+        showToast("已複製網址至剪貼簿！", true);
+        setTimeout(() => {
+          document.getElementById('btn-copy-label').textContent = "一鍵複製網址";
+        }, 2000);
+      } catch (err) {
+        showToast("無法自動複製，請手動選取複製", false);
+      }
+      document.body.removeChild(tempInput);
+    }
+
+    // Custom Toast Notification (Zero native alerts)
+    function showToast(message, isSuccess = true) {
+      const toast = document.getElementById('toast');
+      const msgEl = document.getElementById('toast-msg');
+      const iconEl = document.getElementById('toast-icon');
+
+      msgEl.textContent = message;
+      if (isSuccess) {
+        iconEl.className = "fa-solid fa-circle-check text-emerald-400 text-xl";
+        toast.className = "fixed bottom-16 left-1/2 transform -translate-x-1/2 bg-slate-900/95 text-white px-6 py-3.5 rounded-2xl shadow-2xl border-2 border-amber-400 font-black text-base flex items-center gap-3 z-50 transition-all duration-300 opacity-100";
+      } else {
+        iconEl.className = "fa-solid fa-triangle-exclamation text-amber-400 text-xl";
+        toast.className = "fixed bottom-16 left-1/2 transform -translate-x-1/2 bg-rose-950/95 text-white px-6 py-3.5 rounded-2xl shadow-2xl border-2 border-rose-400 font-black text-base flex items-center gap-3 z-50 transition-all duration-300 opacity-100";
+      }
+
+      setTimeout(() => {
+        toast.classList.remove('opacity-100');
+        toast.classList.add('opacity-0', 'pointer-events-none');
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
